@@ -1,0 +1,4 @@
+# Tells Railway's build system to use Node.js, even though package.json
+# lives inside the backend/ folder rather than at the repo root.
+[phases.setup]
+nixPkgs = ["nodejs_20"]
