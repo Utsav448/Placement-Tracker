@@ -27,7 +27,7 @@ app.use('/api/saved', savedRoutes);
 
 // Serve the frontend (plain HTML/CSS/JS) from the same server.
 // This means ONE deployment serves both the site and the API - no CORS headaches.
-app.use(express.static(path.join(__dirname, '..', 'frontend')));
+app.use(express.static(path.join(__dirname, 'frontend')));
 
 // Central error handler - ANY error passed via next(err) from any route
 // (through asyncHandler) lands here instead of crashing the whole server.

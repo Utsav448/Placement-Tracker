@@ -1,0 +1,95 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Applicants — Placement Tracker</title>
+<link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+
+<header class="masthead">
+  <div class="brand">
+    <div class="seal">PT</div>
+    <div>
+      <h1>Placement Tracker</h1>
+      <div class="tagline">Office of Campus Recruitment — Admin</div>
+    </div>
+  </div>
+  <div>
+    <nav style="display:inline">
+      <a href="admin-dashboard.html">Dashboard</a>
+      <a onclick="logout()" style="cursor:pointer">Log Out</a>
+    </nav>
+  </div>
+</header>
+
+<div class="page">
+  <h2 class="page-title" id="page-title">Applicants</h2>
+  <p class="page-subtitle" id="page-subtitle"></p>
+
+  <table id="applicants-table" style="display:none">
+    <thead>
+      <tr><th>Name</th><th>Email</th><th>Roll No.</th><th>CGPA</th><th>Resume</th><th>Status</th></tr>
+    </thead>
+    <tbody id="applicants-body"></tbody>
+  </table>
+
+  <div id="empty" class="empty-state" style="display:none">No one has applied to this drive yet.</div>
+</div>
+
+<script src="js/api.js"></script>
+<script>
+  const user = requireRole('admin');
+  const params = new URLSearchParams(window.location.search);
+  const driveId = params.get('driveId');
+
+  document.getElementById('page-subtitle').textContent =
+    `${decodeURIComponent(params.get('role') || '')} at ${decodeURIComponent(params.get('company') || '')}`;
+
+  async function updateStatus(appId, newStatus) {
+    try {
+      await apiRequest(`/applications/${appId}/status`, 'PUT', { status: newStatus });
+    } catch (err) {
+      alert(err.message);
+    }
+  }
+
+  async function loadApplicants() {
+    try {
+      const apps = await apiRequest(`/applications/drive/${driveId}`);
+      if (apps.length === 0) {
+        document.getElementById('empty').style.display = 'block';
+        return;
+      }
+      document.getElementById('applicants-table').style.display = 'table';
+      document.getElementById('applicants-body').innerHTML = apps.map(a => {
+        const belowCutoff = Number(a.cgpa) < Number(a.min_cgpa);
+        return `
+        <tr>
+          <td>
+            ${a.student_name}
+            ${belowCutoff ? `<div style="font-size:11px;color:var(--red-seal);margin-top:3px" title="Criteria was raised after this student applied">⚠ Below current cutoff (${a.min_cgpa})</div>` : ''}
+          </td>
+          <td>${a.email}</td>
+          <td>${a.roll_no}</td>
+          <td>${a.cgpa}</td>
+          <td>${a.resume_link ? `<a href="${a.resume_link}" target="_blank" rel="noopener">View</a>` : '—'}</td>
+          <td>
+            <select class="status-select" onchange="updateStatus(${a.id}, this.value)">
+              ${['Applied', 'Shortlisted', 'Selected', 'Rejected'].map(s =>
+                `<option value="${s}" ${s === a.status ? 'selected' : ''}>${s}</option>`).join('')}
+            </select>
+          </td>
+        </tr>`;
+      }).join('');
+    } catch (err) {
+      document.getElementById('empty').textContent = err.message;
+      document.getElementById('empty').style.display = 'block';
+    }
+  }
+
+  loadApplicants();
+</script>
+</body>
+</html>

@@ -1,0 +1,64 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Companies — Placement Tracker</title>
+<link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+
+<header class="masthead">
+  <div class="brand">
+    <div class="seal">PT</div>
+    <div>
+      <h1>Placement Tracker</h1>
+      <div class="tagline">Office of Campus Recruitment</div>
+    </div>
+  </div>
+  <div>
+    <nav style="display:inline">
+      <a href="student-dashboard.html">Open Drives</a>
+      <a href="my-applications.html">My Applications</a>
+      <a href="companies.html">Companies</a>
+      <a href="saved.html">Saved</a>
+      <a href="profile.html">My Profile</a>
+      <a onclick="logout()" style="cursor:pointer">Log Out</a>
+    </nav>
+  </div>
+</header>
+
+<div class="page">
+  <h2 class="page-title">Companies</h2>
+  <p class="page-subtitle">Every company that has visited or is visiting campus this season.</p>
+
+  <div id="companies-container" class="card-grid"></div>
+</div>
+
+<script src="js/api.js"></script>
+<script>
+  const user = requireRole('student');
+
+  async function loadCompanies() {
+    const container = document.getElementById('companies-container');
+    try {
+      const companies = await apiRequest('/companies');
+      if (companies.length === 0) {
+        container.innerHTML = '<div class="empty-state">No companies added yet.</div>';
+        return;
+      }
+      container.innerHTML = companies.map(c => `
+        <div class="drive-card">
+          <div class="company">${c.name}</div>
+          <div class="role" style="color:var(--ink-soft)">${c.description || 'No description provided yet.'}</div>
+        </div>
+      `).join('');
+    } catch (err) {
+      container.innerHTML = `<div class="error-msg">${err.message}</div>`;
+    }
+  }
+
+  loadCompanies();
+</script>
+</body>
+</html>

@@ -1,0 +1,90 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>My Profile — Placement Tracker</title>
+<link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+
+<header class="masthead">
+  <div class="brand">
+    <div class="seal">PT</div>
+    <div>
+      <h1>Placement Tracker</h1>
+      <div class="tagline">Office of Campus Recruitment</div>
+    </div>
+  </div>
+  <div>
+    <nav style="display:inline">
+      <a href="student-dashboard.html">Open Drives</a>
+      <a href="my-applications.html">My Applications</a>
+      <a href="companies.html">Companies</a>
+      <a href="saved.html">Saved</a>
+      <a href="profile.html">My Profile</a>
+      <a onclick="logout()" style="cursor:pointer">Log Out</a>
+    </nav>
+  </div>
+</header>
+
+<div class="page">
+  <h2 class="page-title">My Profile</h2>
+  <p class="page-subtitle">Your academic record is fixed by the placement office — but you can update your resume link anytime.</p>
+
+  <div class="profile-card">
+    <div class="profile-row"><span class="label">Name</span><span class="value" id="p-name">—</span></div>
+    <div class="profile-row"><span class="label">Email</span><span class="value" id="p-email">—</span></div>
+    <div class="profile-row"><span class="label">Roll Number</span><span class="value" id="p-roll">—</span></div>
+    <div class="profile-row"><span class="label">Branch</span><span class="value" id="p-branch">—</span></div>
+    <div class="profile-row"><span class="label">CGPA</span><span class="value" id="p-cgpa">—</span></div>
+
+    <div id="message-area" style="margin-top:20px"></div>
+
+    <form id="resume-form" style="margin-top:8px">
+      <div class="field">
+        <label>Resume Link</label>
+        <input type="url" id="p-resume" placeholder="https://drive.google.com/...">
+      </div>
+      <button class="btn" type="submit">Save Resume Link</button>
+    </form>
+  </div>
+</div>
+
+<script src="js/api.js"></script>
+<script>
+  const user = requireRole('student');
+
+  function showMessage(text, type = 'error') {
+    document.getElementById('message-area').innerHTML =
+      `<div class="${type === 'error' ? 'error-msg' : 'success-msg'}">${text}</div>`;
+  }
+
+  async function loadProfile() {
+    try {
+      const p = await apiRequest('/students/me');
+      document.getElementById('p-name').textContent = p.name;
+      document.getElementById('p-email').textContent = p.email;
+      document.getElementById('p-roll').textContent = p.roll_no;
+      document.getElementById('p-branch').textContent = p.branch;
+      document.getElementById('p-cgpa').textContent = p.cgpa;
+      document.getElementById('p-resume').value = p.resume_link || '';
+    } catch (err) {
+      showMessage(err.message);
+    }
+  }
+
+  document.getElementById('resume-form').addEventListener('submit', async (e) => {
+    e.preventDefault();
+    try {
+      await apiRequest('/students/me', 'PUT', { resume_link: document.getElementById('p-resume').value });
+      showMessage('Resume link updated.', 'success');
+    } catch (err) {
+      showMessage(err.message);
+    }
+  });
+
+  loadProfile();
+</script>
+</body>
+</html>

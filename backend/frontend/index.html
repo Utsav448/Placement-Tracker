@@ -1,0 +1,141 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Placement Tracker — Sign In</title>
+<link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+
+<div class="auth-wrapper">
+
+  <div class="auth-hero">
+    <div class="seal-lg">PT</div>
+    <h1>The campus placement office, moved online.</h1>
+    <p class="lead">Track every drive, every application, and every offer in one place — built for students and the placement cell alike.</p>
+    <div class="stat-row">
+      <div><strong>Open</strong><span>Live drives</span></div>
+      <div><strong>Tracked</strong><span>Every application</span></div>
+      <div><strong>Instant</strong><span>Status updates</span></div>
+    </div>
+  </div>
+
+  <div class="auth-form-side">
+    <div class="form-card" style="margin:0">
+      <h2 id="form-heading">Student Login</h2>
+
+      <div class="role-toggle">
+        <button id="tab-student" class="active" onclick="setRole('student')">Student</button>
+        <button id="tab-admin" onclick="setRole('admin')">Admin</button>
+      </div>
+
+      <div id="message-area"></div>
+
+      <!-- LOGIN FORM -->
+      <form id="login-form">
+        <div class="field">
+          <label>Email</label>
+          <input type="email" id="login-email" required>
+        </div>
+        <div class="field">
+          <label>Password</label>
+          <input type="password" id="login-password" required>
+        </div>
+        <button type="submit" class="btn" style="width:100%">Sign In</button>
+      </form>
+
+      <div class="switch-link" id="switch-to-register">
+        New student? <a onclick="showRegister()">Create an account</a>
+      </div>
+
+      <!-- REGISTER FORM (students only) -->
+      <form id="register-form" style="display:none">
+        <div class="field"><label>Full Name</label><input type="text" id="reg-name" required></div>
+        <div class="field"><label>Email</label><input type="email" id="reg-email" required></div>
+        <div class="field"><label>Password</label><input type="password" id="reg-password" required></div>
+        <div class="field"><label>Roll Number</label><input type="text" id="reg-roll" required></div>
+        <div class="field"><label>Branch</label><input type="text" id="reg-branch" placeholder="e.g. CSE" required></div>
+        <div class="field"><label>CGPA</label><input type="number" step="0.01" min="0" max="10" id="reg-cgpa" required></div>
+        <div class="field"><label>Resume Link (Google Drive / Dropbox share link)</label><input type="url" id="reg-resume" placeholder="https://..."></div>
+        <button type="submit" class="btn" style="width:100%">Create Account</button>
+      </form>
+
+      <div class="switch-link" id="switch-to-login" style="display:none">
+        Already have an account? <a onclick="showLogin()">Sign in</a>
+      </div>
+    </div>
+  </div>
+
+</div>
+
+<script src="js/api.js"></script>
+<script>
+  let currentRole = 'student';
+
+  function setRole(role) {
+    currentRole = role;
+    document.getElementById('tab-student').classList.toggle('active', role === 'student');
+    document.getElementById('tab-admin').classList.toggle('active', role === 'admin');
+    document.getElementById('form-heading').textContent = role === 'admin' ? 'Admin Login' : 'Student Login';
+    document.getElementById('switch-to-register').style.display = role === 'admin' ? 'none' : 'block';
+    showLogin();
+  }
+
+  function showRegister() {
+    document.getElementById('login-form').style.display = 'none';
+    document.getElementById('register-form').style.display = 'block';
+    document.getElementById('switch-to-register').style.display = 'none';
+    document.getElementById('switch-to-login').style.display = 'block';
+    document.getElementById('form-heading').textContent = 'Student Registration';
+  }
+
+  function showLogin() {
+    document.getElementById('login-form').style.display = 'block';
+    document.getElementById('register-form').style.display = 'none';
+    document.getElementById('switch-to-login').style.display = 'none';
+    if (currentRole === 'student') document.getElementById('switch-to-register').style.display = 'block';
+    document.getElementById('form-heading').textContent = currentRole === 'admin' ? 'Admin Login' : 'Student Login';
+  }
+
+  function showMessage(text, type = 'error') {
+    document.getElementById('message-area').innerHTML =
+      `<div class="${type === 'error' ? 'error-msg' : 'success-msg'}">${text}</div>`;
+  }
+
+  document.getElementById('login-form').addEventListener('submit', async (e) => {
+    e.preventDefault();
+    try {
+      const data = await apiRequest('/auth/login', 'POST', {
+        email: document.getElementById('login-email').value,
+        password: document.getElementById('login-password').value,
+        role: currentRole
+      });
+      saveSession(data.token, data.user);
+      window.location.href = currentRole === 'admin' ? 'admin-dashboard.html' : 'student-dashboard.html';
+    } catch (err) {
+      showMessage(err.message);
+    }
+  });
+
+  document.getElementById('register-form').addEventListener('submit', async (e) => {
+    e.preventDefault();
+    try {
+      await apiRequest('/auth/register', 'POST', {
+        name: document.getElementById('reg-name').value,
+        email: document.getElementById('reg-email').value,
+        password: document.getElementById('reg-password').value,
+        roll_no: document.getElementById('reg-roll').value,
+        branch: document.getElementById('reg-branch').value,
+        cgpa: document.getElementById('reg-cgpa').value,
+        resume_link: document.getElementById('reg-resume').value
+      });
+      showMessage('Account created. You can sign in now.', 'success');
+      showLogin();
+    } catch (err) {
+      showMessage(err.message);
+    }
+  });
+</script>
+</body>
+</html>

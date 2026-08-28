@@ -1,0 +1,101 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>My Applications — Placement Tracker</title>
+<link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+
+<header class="masthead">
+  <div class="brand">
+    <div class="seal">PT</div>
+    <div>
+      <h1>Placement Tracker</h1>
+      <div class="tagline">Office of Campus Recruitment</div>
+    </div>
+  </div>
+  <div>
+    <nav style="display:inline">
+      <a href="student-dashboard.html">Open Drives</a>
+      <a href="my-applications.html">My Applications</a>
+      <a href="companies.html">Companies</a>
+      <a href="saved.html">Saved</a>
+      <a href="profile.html">My Profile</a>
+      <a onclick="logout()" style="cursor:pointer">Log Out</a>
+    </nav>
+  </div>
+</header>
+
+<div class="page">
+  <h2 class="page-title">My Applications</h2>
+  <p class="page-subtitle">Track the status of every drive you've applied to.</p>
+
+  <div id="app-stats" class="card-grid" style="margin-bottom:24px"></div>
+
+  <table id="applications-table" style="display:none">
+    <thead>
+      <tr><th>Company</th><th>Role</th><th>Package</th><th>Applied On</th><th>Status</th><th></th></tr>
+    </thead>
+    <tbody id="applications-body"></tbody>
+  </table>
+
+  <div id="empty" class="empty-state" style="display:none">You haven't applied to any drives yet.</div>
+</div>
+
+<script src="js/api.js"></script>
+<script>
+  const user = requireRole('student');
+
+  async function withdraw(appId) {
+    if (!confirm('Withdraw this application? This cannot be undone.')) return;
+    try {
+      await apiRequest(`/applications/${appId}`, 'DELETE');
+      loadApplications();
+    } catch (err) {
+      alert(err.message);
+    }
+  }
+
+  async function loadApplications() {
+    try {
+      const apps = await apiRequest(`/applications/student/${user.id}`);
+      document.getElementById('applications-table').style.display = apps.length ? 'table' : 'none';
+      document.getElementById('empty').style.display = apps.length ? 'none' : 'block';
+
+      const counts = { Applied: 0, Shortlisted: 0, Selected: 0, Rejected: 0 };
+      apps.forEach(a => counts[a.status]++);
+      const stat = (label, value, cls) => `
+        <div class="drive-card status-${cls}" style="border-left-color: currentColor">
+          <div class="company" style="font-size:24px">${value}</div>
+          <div class="role">${label}</div>
+        </div>`;
+      document.getElementById('app-stats').innerHTML =
+        stat('Applied', counts.Applied, 'Applied') +
+        stat('Shortlisted', counts.Shortlisted, 'Shortlisted') +
+        stat('Selected', counts.Selected, 'Selected') +
+        stat('Rejected', counts.Rejected, 'Rejected');
+
+      if (apps.length === 0) return;
+
+      document.getElementById('applications-body').innerHTML = apps.map(a => `
+        <tr>
+          <td>${a.company_name}</td>
+          <td>${a.role}</td>
+          <td>${a.package_offered || '—'}</td>
+          <td>${new Date(a.applied_on).toLocaleDateString()}</td>
+          <td><span class="seal-status status-${a.status}">${a.status}</span></td>
+          <td>${a.status === 'Applied' ? `<a onclick="withdraw(${a.id})" style="cursor:pointer;color:var(--maroon);font-size:12px">Withdraw</a>` : ''}</td>
+        </tr>
+      `).join('');
+    } catch (err) {
+      document.getElementById('empty').textContent = err.message;
+      document.getElementById('empty').style.display = 'block';
+    }
+  }
+
+  loadApplications();
+</script>
+</body>
+</html>
